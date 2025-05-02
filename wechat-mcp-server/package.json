@@ -1,0 +1,24 @@
+{
+  "name": "wechat-mcp-server",
+  "version": "0.1.0",
+  "description": "Local MCP server for WeChat Official Account interactions",
+  "main": "server.js",
+  "bin": {
+    "wechat-mcp-server": "./cli.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mcp",
+    "wechat",
+    "server"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "yargs": "^17.7.2"
+  }
+} 
