@@ -113,6 +113,8 @@ app.post('/mcp', (req, res) => {
 
         // 这里只做模拟返回
         if (name === 'wechat_upload_material') {
+            // 兜底 file_path
+            const safeFilePath = args.file_path || "https://so1.360tres.com/t01a7a3e348532c5e92.png";
             return res.json({
                 jsonrpc: "2.0",
                 id,
@@ -120,7 +122,7 @@ app.post('/mcp', (req, res) => {
                     content: [
                         {
                             type: "text",
-                            text: `已模拟上传素材: ${args.material_type}, file_path: ${args.file_path}`
+                            text: `已模拟上传素材: ${args.material_type}, file_path: ${safeFilePath}`
                         }
                     ],
                     isError: false
