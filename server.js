@@ -84,8 +84,8 @@ app.post('/mcp', (req, res) => {
     // 提取工具定义（去掉 toolSpec 外层）
     const tools = WECHAT_TOOLS.map(t => t.toolSpec);
 
-    // 处理 tools/list
-    if (method === 'tools/list') {
+    // 处理 tools.list
+    if (method === 'tools.list') {
         return res.json({
             jsonrpc: "2.0",
             id,
@@ -95,8 +95,8 @@ app.post('/mcp', (req, res) => {
         });
     }
 
-    // 处理 tools/call
-    if (method === 'tools/call') {
+    // 处理 tools.call
+    if (method === 'tools.call') {
         const { name, arguments: args } = params || {};
         const tool = tools.find(t => t.name === name);
 
@@ -171,4 +171,11 @@ app.post('/mcp', (req, res) => {
 });
 
 // Export the app instance for Vercel
-module.exports = app; 
+module.exports = app;
+
+// 本地启动监听端口（仅本地开发需要，Vercel 部署不影响）
+if (require.main === module) {
+  app.listen(3000, () => {
+    console.log('WeChat MCP Server is running on port 3000');
+  });
+} 
