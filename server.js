@@ -67,88 +67,107 @@ app.get('/', (req, res) => {
 
 // MCP Endpoint
 app.post('/mcp', (req, res) => {
-    console.log("Received MCP request:", JSON.stringify(req.body, null, 2));
+    const { jsonrpc, id, method, params } = req.body;
 
-    const { mcp_version, action, data } = req.body;
-
-    if (mcp_version !== '2025-03-26') {
-         console.warn(`Received request with unsupported MCP version: ${mcp_version}`);
+    // 检查 JSON-RPC 2.0 协议
+    if (jsonrpc !== '2.0' || typeof id === 'undefined' || !method) {
+        return res.json({
+            jsonrpc: "2.0",
+            id: id || null,
+            error: {
+                code: -32600,
+                message: "Invalid Request"
+            }
+        });
     }
 
-    switch (action) {
-        case 'describe':
-            res.json({
-                mcp_version: "2025-03-26",
-                server: {
-                    name: "wechat-mcp-server-vercel", // Updated name slightly
-                    version: "0.1.0",
-                    description: "Server bridging MCP to WeChat APIs, deployed on Vercel.",
-                },
-                tools: WECHAT_TOOLS
-            });
-            break;
+    // 提取工具定义（去掉 toolSpec 外层）
+    const tools = WECHAT_TOOLS.map(t => t.toolSpec);
 
-        case 'call_tool':
-            const { tool_name, input } = data;
-            console.log(`Attempting to call tool: ${tool_name}`);
-
-            const toolDefinition = WECHAT_TOOLS.find(t => t.toolSpec.name === tool_name);
-
-            if (!toolDefinition) {
-                console.error(`Tool not found: ${tool_name}`);
-                return res.status(404).json({
-                    mcp_version: "2025-03-26",
-                    status: "error",
-                    error: {
-                        code: "tool_not_found",
-                        message: `Tool '${tool_name}' is not available on this server.`
-                    }
-                });
+    // 处理 tools/list
+    if (method === 'tools/list') {
+        return res.json({
+            jsonrpc: "2.0",
+            id,
+            result: {
+                tools
             }
+        });
+    }
 
-            // --- Placeholder for Actual WeChat API Call ---
-            // IMPORTANT: Implement actual WeChat API calls here.
-            // Use environment variables for API keys/secrets.
-            // Handle file uploads appropriately (e.g., client uploads to Vercel Blob or another storage, then passes URL).
-            console.log(`Simulating call to tool '${tool_name}' with input:`, input);
+    // 处理 tools/call
+    if (method === 'tools/call') {
+        const { name, arguments: args } = params || {};
+        const tool = tools.find(t => t.name === name);
 
-            if (tool_name === 'wechat_upload_material') {
-                 const simulatedMediaId = `simulated_media_id_${Date.now()}`;
-                 const simulatedUrl = `http://simulated.wechat.com/media?id=${simulatedMediaId}`;
-                 res.json({
-                     mcp_version: "2025-03-26",
-                     status: "success",
-                     tool_result: { media_id: simulatedMediaId, url: simulatedUrl }
-                 });
-            }
-            else if (tool_name === 'wechat_publish_article') {
-                 const simulatedPublishId = `simulated_publish_id_${Date.now()}`;
-                 res.json({
-                     mcp_version: "2025-03-26",
-                     status: "success",
-                     tool_result: { status: "submitted", publish_id: simulatedPublishId }
-                 });
-            } else {
-                 res.json({
-                     mcp_version: "2025-03-26",
-                     status: "success",
-                     tool_result: { message: `Successfully simulated call to ${tool_name}` }
-                 });
-            }
-            // --- End Placeholder ---
-            break;
-
-        default:
-            console.error(`Unknown MCP action: ${action}`);
-            res.status(400).json({
-                mcp_version: "2025-03-26",
-                status: "error",
+        if (!tool) {
+            return res.json({
+                jsonrpc: "2.0",
+                id,
                 error: {
-                    code: "invalid_action",
-                    message: `Unknown action '${action}'. Valid actions are 'describe', 'call_tool'.`
+                    code: -32602,
+                    message: `Unknown tool: ${name}`
                 }
             });
+        }
+
+        // 这里只做模拟返回
+        if (name === 'wechat_upload_material') {
+            return res.json({
+                jsonrpc: "2.0",
+                id,
+                result: {
+                    content: [
+                        {
+                            type: "text",
+                            text: `已模拟上传素材: ${args.material_type}, file_path: ${args.file_path}`
+                        }
+                    ],
+                    isError: false
+                }
+            });
+        }
+        if (name === 'wechat_publish_article') {
+            return res.json({
+                jsonrpc: "2.0",
+                id,
+                result: {
+                    content: [
+                        {
+                            type: "text",
+                            text: `已模拟发布文章: ${args.title}`
+                        }
+                    ],
+                    isError: false
+                }
+            });
+        }
+
+        // 兜底
+        return res.json({
+            jsonrpc: "2.0",
+            id,
+            result: {
+                content: [
+                    {
+                        type: "text",
+                        text: `工具 ${name} 已被调用`
+                    }
+                ],
+                isError: false
+            }
+        });
     }
+
+    // 未知方法
+    return res.json({
+        jsonrpc: "2.0",
+        id,
+        error: {
+            code: -32601,
+            message: `Method not found: ${method}`
+        }
+    });
 });
 
 // Export the app instance for Vercel
